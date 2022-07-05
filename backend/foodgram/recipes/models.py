@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 # from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -6,10 +5,8 @@ from django.db import models
 # from django.utils import timezone
 
 
-User = get_user_model()
-
-# class User(AbstractUser):
-#     """Класс, описывающий стандартного пользователя."""
+class User(AbstractUser):
+    """Класс, описывающий стандартного пользователя."""
 #     USER = 'user'
 #     MODERATOR = 'moderator'
 #     ADMIN = 'admin'
@@ -77,8 +74,8 @@ class Tag(models.Model):
         default='Наименаование тэга',
         max_length=50,
     )
-    hex_code = models.CharField(
-        'HEX код',
+    color = models.CharField(
+        'Цвет',
         max_length=12,
     )
     slug = models.SlugField(unique=True)
@@ -95,30 +92,28 @@ class Tag(models.Model):
 class Ingridient(models.Model):
     """Класс, описывающий ингридиент."""
     MG = 'mg'
+    G = 'g'
+    KG = 'kg'
     ML = 'ml'
-    UNITLESS = 'unitless'
-    UNITS = (
+    L = 'l'
+    UNIT = 'unitless'
+    MEASUREMENT_UNITS = (
         (MG, 'мг'),
+        (G, 'г'),
+        (KG, 'кг'),
         (ML, 'мл'),
-        (UNITLESS, 'шт')
+        (L, 'л'),
+        (UNIT, 'шт')
     )
     name = models.CharField(
         'Название',
         default='Название ингридиента',
-        max_length=50,
+        max_length=100,
     )
-    amount = models.PositiveIntegerField(
-        'Количество',
-        default=1,
-        validators=(
-            MinValueValidator(1,
-                              message='Ингридиентов должны быть не менее 1!'),
-        )
-    )
-    unit = models.CharField(
-        'Единицы измерения',
-        choices=UNITS,
-        default=UNITLESS,
+    measurement_unit = models.CharField(
+        'Единица измерения',
+        choices=MEASUREMENT_UNITS,
+        default=UNIT,
         max_length=10,
     )
 
@@ -128,7 +123,7 @@ class Ingridient(models.Model):
         ordering = ('name', )
 
     def __str__(self):
-        return f"{self.name} - {self.amount}{self.unit}"
+        return self.name
 
 
 class Recipe(models.Model):
@@ -137,12 +132,12 @@ class Recipe(models.Model):
         User,
         verbose_name='Автор',
         on_delete=models.CASCADE,
-        related_name='reviews',
+        # related_name='recipes',
     )
-    title = models.CharField(
+    name = models.CharField(
         'Название',
         default='Название блюда',
-        max_length=50,
+        max_length=200,
     )
     # image = models.ImageField(
     #     'Изображение',
@@ -154,17 +149,21 @@ class Recipe(models.Model):
     )
     ingridients = models.ManyToManyField(
         Ingridient,
+        through='AmountOfIngridient',
+        blank=False,
         related_name='recipes'
     )
-    tag = models.ManyToManyField(
+    tags = models.ManyToManyField(
         Tag,
+        verbose_name='Тэги',
+        blank=False,
         related_name='recipes'
     )
-    time = models.IntegerField(
+    cooking_time = models.IntegerField(
         'Минут на приготовление',
         validators=(
             MinValueValidator(1,
-                              message='Время приготовления - положительное!'),
+                              message='Минимальное время готовки - 1 минута!'),
         ),
     )
     pub_date = models.DateTimeField(
@@ -175,4 +174,18 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('title', 'author')
+        ordering = ('name', 'author')
+
+
+class AmountOfIngridient(models.Model):
+    ingridient = models.ForeignKey(
+        Ingridient,
+        on_delete=models.CASCADE,
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE
+    )
+    amount = models.PositiveIntegerField(
+        'Количество',
+    )

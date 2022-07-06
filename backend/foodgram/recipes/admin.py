@@ -30,6 +30,15 @@ class IngridientAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
+@admin.register(models.AmountOfIngridient)
+class AmountOfIngridientAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'ingridient', 'recipe', 'amount')
+    # search_fields = ('first_name', 'last_name')
+    # list_filter = ('name',)
+    # list_editable = ('role',)
+    empty_value_display = '-пусто-'
+
+
 @admin.register(models.Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'author', )

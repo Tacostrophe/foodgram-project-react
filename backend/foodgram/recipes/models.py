@@ -26,6 +26,7 @@ class User(AbstractUser):
         'last name',
         max_length=150,
     )
+    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
 #     bio = models.TextField(
 #         'biography',
 #         blank=True,
@@ -137,10 +138,11 @@ class Recipe(models.Model):
         default='Название блюда',
         max_length=200,
     )
-    # image = models.ImageField(
-    #     'Изображение',
-    #     upload_to='recipes/'
-    # )
+    image = models.ImageField(
+        'Изображение',
+        upload_to='recipes/',
+        blank=False,
+    )
     description = models.TextField(
         'Описание',
         default='Текстовое описание',

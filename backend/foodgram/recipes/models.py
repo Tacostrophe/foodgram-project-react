@@ -187,8 +187,90 @@ class AmountOfIngridient(models.Model):
     )
     recipe = models.ForeignKey(
         Recipe,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     amount = models.PositiveIntegerField(
         'Количество',
     )
+
+
+class Subscription(models.Model):
+    following = models.ForeignKey(
+        User,
+        verbose_name='преследуемый',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='followers'
+    )
+    user = models.ForeignKey(
+        User,
+        verbose_name='пользователь',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='followings'
+    )
+
+    class Meta:
+        verbose_name = 'Подписки'
+        verbose_name_plural = 'Подписки'
+        constraints = (
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('following')),
+                name='cant_follow_youself'
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'following'], name='unique_following'
+            ),
+        )
+
+    def __str__(self):
+        return f'{self.user}=>{self.following}'
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        User,
+        verbose_name='пользователь',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='favorites'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        verbose_name='рецепт',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='fans'
+    )
+
+    class Meta:
+        unique_together = ('user', 'recipe')
+
+    def __str__(self):
+        return f'{self.user}<3{self.recipe}'
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(
+        User,
+        verbose_name='пользователь',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='purchases'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        verbose_name='рецепт',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='customers'
+    )
+
+    def __str__(self):
+        return f'{self.user}-{self.recipe}'

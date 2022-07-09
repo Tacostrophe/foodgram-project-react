@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 # from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
 
@@ -76,6 +76,9 @@ class Tag(models.Model):
         'Цвет',
         max_length=12,
         unique=True,
+        validators=(
+            RegexValidator(regex=r'^#[0-9a-fA-F]{6}',),
+        )
     )
     slug = models.SlugField(unique=True)
 
@@ -88,7 +91,7 @@ class Tag(models.Model):
         return f"#{self.name}"
 
 
-class Ingridient(models.Model):
+class Ingredient(models.Model):
     """Класс, описывающий ингридиент."""
     MG = 'mg'
     G = 'g'
@@ -111,9 +114,7 @@ class Ingridient(models.Model):
     )
     measurement_unit = models.CharField(
         'Единица измерения',
-        choices=MEASUREMENT_UNITS,
-        default=UNIT,
-        max_length=10,
+        max_length=50,
     )
 
     class Meta:
@@ -131,7 +132,7 @@ class Recipe(models.Model):
         User,
         verbose_name='Автор',
         on_delete=models.CASCADE,
-        # related_name='recipes',
+        related_name='recipes',
     )
     name = models.CharField(
         'Название',
@@ -147,8 +148,8 @@ class Recipe(models.Model):
         'Описание',
         default='Текстовое описание',
     )
-    ingridients = models.ManyToManyField(
-        Ingridient,
+    ingredients = models.ManyToManyField(
+        Ingredient,
         through='AmountOfIngridient',
         blank=False,
         related_name='recipes'
@@ -182,7 +183,7 @@ class Recipe(models.Model):
 
 class AmountOfIngridient(models.Model):
     ingridient = models.ForeignKey(
-        Ingridient,
+        Ingredient,
         on_delete=models.CASCADE,
     )
     recipe = models.ForeignKey(
@@ -217,7 +218,7 @@ class Subscription(models.Model):
         verbose_name_plural = 'Подписки'
         constraints = (
             models.CheckConstraint(
-                check=~models.Q(user=models.F('following')),
+                check=~models.Q(following=models.F('user')),
                 name='cant_follow_youself'
             ),
             models.UniqueConstraint(

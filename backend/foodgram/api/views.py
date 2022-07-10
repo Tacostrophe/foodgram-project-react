@@ -1,7 +1,11 @@
+from django.contrib.auth import get_user_model
 from rest_framework import viewsets
 
 from . import serializers
 from recipes import models
+
+
+User = get_user_model()
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

@@ -52,6 +52,8 @@ urlpatterns = [
         '',
         include(router_v1.urls)
     ),
+    path('', include('djoser.urls')),
+    path('auth/', include('djoser.urls.authtoken'))
     # path(
     #     'v1/auth/token/',
     #     views.CustomTokenObtainView.as_view(),

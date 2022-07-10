@@ -6,14 +6,6 @@ from django.db import models
 
 class User(AbstractUser):
     """Класс, описывающий стандартного пользователя."""
-#     USER = 'user'
-#     MODERATOR = 'moderator'
-#     ADMIN = 'admin'
-#     Role = (
-#         (USER, '0'),
-#         (MODERATOR, '1'),
-#         (ADMIN, '2'),
-#     )
     username = models.CharField(
         'username',
         max_length=150,
@@ -36,18 +28,6 @@ class User(AbstractUser):
         max_length=150,
     )
     REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
-#     bio = models.TextField(
-#         'biography',
-#         blank=True,
-#         null=True,
-#     )
-#     role = models.CharField(
-#         'role',
-#         default='user',
-#         choices=Role,
-#         max_length=10,
-#     )
-
     class Meta:
         constraints = [
             models.constraints.UniqueConstraint(

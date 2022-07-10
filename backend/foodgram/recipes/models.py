@@ -14,6 +14,15 @@ class User(AbstractUser):
 #         (MODERATOR, '1'),
 #         (ADMIN, '2'),
 #     )
+    username = models.CharField(
+        'username',
+        max_length=150,
+        unique=True,
+        blank=False,
+        validators=(
+            RegexValidator(regex=r'^[\w.@+-]',),
+        )
+    )
     email = models.EmailField(
         'email',
         max_length=254,

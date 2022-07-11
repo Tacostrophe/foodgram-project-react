@@ -1,5 +1,4 @@
-from django.contrib.auth import authenticate, get_user_model
-from djoser.compat import get_user_email_field_name
+from django.contrib.auth import get_user_model
 from djoser.conf import settings
 from djoser.serializers import UserCreateSerializer
 from recipes import models

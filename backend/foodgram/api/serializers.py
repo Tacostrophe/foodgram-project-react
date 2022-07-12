@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from djoser.conf import settings
-from djoser.serializers import UserCreateSerializer
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from recipes import models
 from rest_framework import serializers
 
@@ -27,4 +27,25 @@ class CustomUserCreateSerializer(UserCreateSerializer):
             settings.USER_ID_FIELD,
             'password',
             'username',
+        )
+
+
+class CustomUserSerializer(UserSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if (request.user.is_authenticated and
+            models.Subscribtion.objects.filter(following=obj,
+                                               user=request.user).exists()):
+            return True
+        return False
+
+    class Meta:
+        model = User
+        fields = tuple(User.REQUIRED_FIELDS) + (
+            settings.LOGIN_FIELD,
+            settings.USER_ID_FIELD,
+            'username',
+            'is_subscribed'
         )

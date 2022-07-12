@@ -48,8 +48,8 @@ class RecipeAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-@admin.register(models.Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
+@admin.register(models.Subscribtion)
+class SubscribtionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'following', )
 
 

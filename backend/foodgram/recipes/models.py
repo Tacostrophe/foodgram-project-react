@@ -28,6 +28,7 @@ class User(AbstractUser):
         max_length=150,
     )
     REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
+
     class Meta:
         constraints = [
             models.constraints.UniqueConstraint(
@@ -82,20 +83,6 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     """Класс, описывающий ингридиент."""
-    MG = 'mg'
-    G = 'g'
-    KG = 'kg'
-    ML = 'ml'
-    L = 'l'
-    UNIT = 'unitless'
-    MEASUREMENT_UNITS = (
-        (MG, 'мг'),
-        (G, 'г'),
-        (KG, 'кг'),
-        (ML, 'мл'),
-        (L, 'л'),
-        (UNIT, 'шт')
-    )
     name = models.CharField(
         'Название',
         default='Название ингридиента',
@@ -164,7 +151,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ('name', 'author')
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.name
@@ -184,7 +171,7 @@ class AmountOfIngridient(models.Model):
     )
 
 
-class Subscription(models.Model):
+class Subscribtion(models.Model):
     following = models.ForeignKey(
         User,
         verbose_name='преследуемый',

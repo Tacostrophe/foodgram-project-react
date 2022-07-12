@@ -171,7 +171,7 @@ class AmountOfIngridient(models.Model):
     )
 
 
-class Subscribtion(models.Model):
+class Subscription(models.Model):
     following = models.ForeignKey(
         User,
         verbose_name='преследуемый',

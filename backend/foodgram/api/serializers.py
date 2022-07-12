@@ -36,7 +36,7 @@ class CustomUserSerializer(UserSerializer):
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
         if (request.user.is_authenticated and
-            models.Subscribtion.objects.filter(following=obj,
+            models.Subscription.objects.filter(following=obj,
                                                user=request.user).exists()):
             return True
         return False

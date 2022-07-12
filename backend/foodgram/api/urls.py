@@ -36,7 +36,7 @@ router_v1.register(
 # )
 # router_v1.register(
 #     r'users',
-#     views.UserViewSet,
+#     views.CustomUserViewSet,
 #     basename='users'
 # )
 # router_v1.register(

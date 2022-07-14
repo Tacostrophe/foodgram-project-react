@@ -49,3 +49,38 @@ class CustomUserSerializer(UserSerializer):
             'username',
             'is_subscribed'
         )
+
+
+class SubsRecipesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class SubscriptionListSerializer(CustomUserSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = request.query_params.get('recipes_limit', None)
+        if recipes_limit:
+            response = models.Recipe.objects.filter(author=obj)[:int(recipes_limit)]
+        else:
+            response = models.Recipe.objects.filter(author=obj)
+        return response
+
+    def get_recipes_count(self, obj):
+        return models.Recipe.objects.filter(author=obj).count()
+
+    class Meta:
+        model = User
+        fields = tuple(User.REQUIRED_FIELDS) + (
+            settings.LOGIN_FIELD,
+            settings.USER_ID_FIELD,
+            'username',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        )
+        depth = 2

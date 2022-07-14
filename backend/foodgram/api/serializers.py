@@ -57,7 +57,7 @@ class SubsRecipesSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
-class SubscriptionListSerializer(CustomUserSerializer):
+class SubscriptionSerializer(CustomUserSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
@@ -65,7 +65,8 @@ class SubscriptionListSerializer(CustomUserSerializer):
         request = self.context.get('request')
         recipes_limit = request.query_params.get('recipes_limit', None)
         if recipes_limit:
-            response = models.Recipe.objects.filter(author=obj)[:int(recipes_limit)]
+            response = (models.Recipe.objects.
+                        filter(author=obj)[:int(recipes_limit)])
         else:
             response = models.Recipe.objects.filter(author=obj)
         return response

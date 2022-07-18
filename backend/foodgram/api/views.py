@@ -1,11 +1,14 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import viewsets, filters, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from .permissions import OwnerOrReadOnly
+from .filters import RecipeFilters
 from recipes import models
 from . import serializers, pagination
 
@@ -19,8 +22,45 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     # pagination_class = None
 
 
-class RecipeViewSet():
+class RecipeViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов"""
+    serializer_class = serializers.RecipeSerializer
+    serializer = serializers.RecipeSerializer(partial=False)
+    pagination_class = pagination.CustomPageNumberPagination
+    permission_classes = (OwnerOrReadOnly,)
+    http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
+    filter_backends = (DjangoFilterBackend,)
+    # filterset_fields = ('author', 'tags')
+    filterset_class = RecipeFilters
+
+    def get_queryset(self):
+        return models.Recipe.objects.all()
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = False
+        return self.update(request, *args, **kwargs)
+
+    @action(
+        methods=['post', 'delete'],
+        detail=True,
+        permission_classes=(permissions.IsAuthenticated,),
+        serializer_class=serializers.SubsRecipesSerializer
+    )
+    def favorite(self, request, pk=None):
+        recipe = get_object_or_404(models.Recipe, pk=pk)
+        favorite = models.Favorite.objects.filter(user=request.user,
+                                                  recipe=recipe)
+        if request.method == 'POST':
+            if (favorite.exists()):
+                raise ValidationError('Can\'t like it two times')
+            models.Favorite(user=request.user, recipe=recipe).save()
+            serializer = self.get_serializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        elif request.method == 'DELETE':
+            if (not favorite.exists()):
+                raise ValidationError('Don\'t like it already')
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ShoppingCartViewSet():
@@ -29,10 +69,6 @@ class ShoppingCartViewSet():
 
 class FavoriteViewSet():
     """Вьюсет для избранного"""
-
-
-class SubscriptionViewSet():
-    """Вьюсет для подписок"""
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

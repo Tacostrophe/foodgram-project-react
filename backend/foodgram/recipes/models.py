@@ -37,21 +37,6 @@ class User(AbstractUser):
             )
         ]
         ordering = ('-id',)
-#
-#     @property
-#     def is_user(self):
-#         return self.role == self.USER
-#
-#     @property
-#     def is_moderator(self):
-#         return self.role == self.MODERATOR
-#
-#     @property
-#     def is_admin(self):
-#         return self.role == self.ADMIN
-#
-#     def permission_level(self) -> int:
-#         return int(self.get_role_display())
 
 
 class Tag(models.Model):
@@ -115,19 +100,18 @@ class Recipe(models.Model):
         default='Название блюда',
         max_length=200,
     )
-    image = models.ImageField(
+    image = models.FileField(
         'Изображение',
         upload_to='recipes/',
         blank=False,
     )
-    description = models.TextField(
+    text = models.TextField(
         'Описание',
         default='Текстовое описание',
     )
     ingredients = models.ManyToManyField(
-        Ingredient,
-        through='AmountOfIngridient',
-        blank=False,
+        'AmountOfIngredient',
+        blank=True,
         related_name='recipes'
     )
     tags = models.ManyToManyField(
@@ -137,7 +121,7 @@ class Recipe(models.Model):
         related_name='recipes'
     )
     cooking_time = models.IntegerField(
-        'Минут на приготовление',
+        'Время приготовления в минутах',
         validators=(
             MinValueValidator(1,
                               message='Минимальное время готовки - 1 минута!'),
@@ -157,18 +141,28 @@ class Recipe(models.Model):
         return self.name
 
 
-class AmountOfIngridient(models.Model):
-    ingridient = models.ForeignKey(
+class AmountOfIngredient(models.Model):
+    ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name='ingredients_amount'
     )
     amount = models.PositiveIntegerField(
         'Количество',
     )
+
+    class Meta:
+        verbose_name = 'Ингридиент в рецепте'
+        verbose_name_plural = 'Ингридиенты в рецепте'
+        unique_together = ['ingredient', 'recipe']
+
+    def __str__(self):
+        return (f'{self.ingredient.name} - {self.amount} ' +
+                f'{self.ingredient.measurement_unit}')
 
 
 class Subscription(models.Model):

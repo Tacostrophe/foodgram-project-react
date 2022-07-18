@@ -19,15 +19,16 @@ router_v1.register(
 )
 
 router_v1.register(
+    r'recipes',
+    views.RecipeViewSet,
+    basename='recipes',
+)
+
+router_v1.register(
     r'users',
     views.CustomUserViewSet,
     basename='users',
 )
-# router_v1.register(
-#     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
-#     views.CommentViewSet,
-#     'comments'
-# )
 
 app_name = 'api'
 

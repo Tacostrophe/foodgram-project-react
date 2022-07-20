@@ -4,27 +4,74 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
 
-class ShoppingCart(models.Model):
+class PersonalList(models.Model):
     user = models.OneToOneField(
         to='User',
         verbose_name='пользователь',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='shopping_cart'
+        on_delete=models.CASCADE,
+        related_name='%(class)s',
+        related_query_name='%(class)ss'
     )
-    recipes = models.ManyToManyField(
+
+    class Meta:
+        abstract = True
+
+
+class PersonalRecipeList(PersonalList):
+    recipe = models.ManyToManyField(
         to='Recipe',
-        verbose_name='рецепты',
+        verbose_name='рецепт',
         blank=True,
-        related_name='shopping_cart'
+        related_name='%(class)s',
+        related_query_name='%(class)ss'
     )
+
+    class Meta:
+        abstract = True
+
+
+class Favorite(PersonalRecipeList):
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'
+
+    def __str__(self):
+        return f'{self.user} <3 {self.recipe}'
+
+    def __repr__(self):
+        return f'{self.user} <3 {self.recipe}'
+
+
+class ShoppingCart(PersonalRecipeList):
+    class Meta:
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'
 
     def __str__(self):
         return f'Sh. cart of {self.user}'
 
     def __repr__(self):
         return f'Sh. cart of {self.user}'
+
+
+class Subscription(PersonalList):
+    following = models.ManyToManyField(
+        'User',
+        verbose_name='преследуемый',
+        blank=True,
+        related_name='subscription_by',
+        related_query_name='subscriptions_by'
+    )
+
+    class Meta:
+        verbose_name = 'Подписки'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return f'{self.user}=>{self.following}'
+
+    def __repr__(self):
+        return f'{self.user}=>{self.following}'
 
 
 class User(AbstractUser):
@@ -61,12 +108,13 @@ class User(AbstractUser):
         ]
         ordering = ('-id',)
 
-
-    def save(self,*args,**kwargs):
+    def save(self, *args, **kwargs):
         created = not self.pk
-        super().save(*args,**kwargs)
+        super().save(*args, **kwargs)
         if created:
+            Favorite.objects.create(user=self)
             ShoppingCart.objects.create(user=self)
+            Subscription.objects.create(user=self)
 
     def __str__(self):
         return self.username
@@ -190,14 +238,19 @@ class AmountOfIngredient(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
+        related_name='amount_of_ingredients'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='ingredients_amount'
+        related_name='amount_of_ingredients'
     )
     amount = models.PositiveIntegerField(
         'Количество',
+        validators=(
+            MinValueValidator(1,
+                              message='Минимальное количество - 1!'),
+        ),
     )
 
     class Meta:
@@ -212,69 +265,3 @@ class AmountOfIngredient(models.Model):
     def __repr__(self):
         return (f'{self.ingredient.name} - {self.amount} ' +
                 f'{self.ingredient.measurement_unit}')
-
-
-class Subscription(models.Model):
-    following = models.ForeignKey(
-        User,
-        verbose_name='преследуемый',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='followers'
-    )
-    user = models.ForeignKey(
-        User,
-        verbose_name='пользователь',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='followings'
-    )
-
-    class Meta:
-        verbose_name = 'Подписки'
-        verbose_name_plural = 'Подписки'
-        constraints = (
-            models.CheckConstraint(
-                check=~models.Q(following=models.F('user')),
-                name='cant_follow_youself'
-            ),
-            models.UniqueConstraint(
-                fields=['user', 'following'], name='unique_following'
-            ),
-        )
-
-    def __str__(self):
-        return f'{self.user}=>{self.following}'
-
-    def __repr__(self):
-        return f'{self.user}=>{self.following}'
-
-
-class Favorite(models.Model):
-    user = models.ForeignKey(
-        User,
-        verbose_name='пользователь',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='favorites'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        verbose_name='рецепт',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='favorites'
-    )
-
-    class Meta:
-        unique_together = ('user', 'recipe')
-
-    def __str__(self):
-        return f'{self.user} <3 {self.recipe}'
-
-    def __repr__(self):
-        return f'{self.user} <3 {self.recipe}'

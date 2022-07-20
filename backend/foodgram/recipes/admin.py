@@ -60,4 +60,4 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(models.ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'recipe', )
+    list_display = ('pk', 'user', )

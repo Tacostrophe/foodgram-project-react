@@ -6,7 +6,6 @@ from recipes import models
 from rest_framework import serializers
 
 from . import fields
-from .validators import tags_list_validator
 
 User = get_user_model()
 
@@ -123,8 +122,19 @@ class RecipeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(min_length=1, max_length=200, required=True, )
     text = serializers.CharField(min_length=1, required=True)
     cooking_time = serializers.IntegerField(required=True, )
-    # is_favorited = serializers.SerializerMethodField()
-    # is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        return (request.user.is_authenticated and
+                models.Favorite.objects.filter(user=request.user,
+                                               recipe=obj).exists())
+
+    def get_is_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        return (request.user.is_authenticated and
+                request.user.shopping_cart.recipes.filter(id=obj.id).exists())
 
     def validate(self, data):
         print('Were in validate')
@@ -293,4 +303,4 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Recipe
         fields = ('id', 'tags', 'author', 'ingredients', 'name', 'image',
-                  'text', 'cooking_time')
+                  'text', 'cooking_time', 'is_favorited', 'is_in_shopping_cart')

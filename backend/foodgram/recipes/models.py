@@ -4,6 +4,29 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
 
+class ShoppingCart(models.Model):
+    user = models.OneToOneField(
+        to='User',
+        verbose_name='пользователь',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='shopping_cart'
+    )
+    recipes = models.ManyToManyField(
+        to='Recipe',
+        verbose_name='рецепты',
+        blank=True,
+        related_name='shopping_cart'
+    )
+
+    def __str__(self):
+        return f'Sh. cart of {self.user}'
+
+    def __repr__(self):
+        return f'Sh. cart of {self.user}'
+
+
 class User(AbstractUser):
     """Класс, описывающий стандартного пользователя."""
     username = models.CharField(
@@ -39,6 +62,19 @@ class User(AbstractUser):
         ordering = ('-id',)
 
 
+    def save(self,*args,**kwargs):
+        created = not self.pk
+        super().save(*args,**kwargs)
+        if created:
+            ShoppingCart.objects.create(user=self)
+
+    def __str__(self):
+        return self.username
+
+    def __repr__(self):
+        return self.username
+
+
 class Tag(models.Model):
     """Класс, описывающий тэг."""
     name = models.CharField(
@@ -65,6 +101,9 @@ class Tag(models.Model):
     def __str__(self):
         return f"#{self.name}"
 
+    def __repr__(self):
+        return f"#{self.name}"
+
 
 class Ingredient(models.Model):
     """Класс, описывающий ингридиент."""
@@ -84,6 +123,9 @@ class Ingredient(models.Model):
         ordering = ('name', )
 
     def __str__(self):
+        return self.name
+
+    def __repr__(self):
         return self.name
 
 
@@ -140,6 +182,9 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return self.name
+
 
 class AmountOfIngredient(models.Model):
     ingredient = models.ForeignKey(
@@ -161,6 +206,10 @@ class AmountOfIngredient(models.Model):
         unique_together = ['ingredient', 'recipe']
 
     def __str__(self):
+        return (f'{self.ingredient.name} - {self.amount} ' +
+                f'{self.ingredient.measurement_unit}')
+
+    def __repr__(self):
         return (f'{self.ingredient.name} - {self.amount} ' +
                 f'{self.ingredient.measurement_unit}')
 
@@ -199,6 +248,9 @@ class Subscription(models.Model):
     def __str__(self):
         return f'{self.user}=>{self.following}'
 
+    def __repr__(self):
+        return f'{self.user}=>{self.following}'
+
 
 class Favorite(models.Model):
     user = models.ForeignKey(
@@ -215,33 +267,14 @@ class Favorite(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name='fans'
+        related_name='favorites'
     )
 
     class Meta:
         unique_together = ('user', 'recipe')
 
     def __str__(self):
-        return f'{self.user}<3{self.recipe}'
+        return f'{self.user} <3 {self.recipe}'
 
-
-class ShoppingCart(models.Model):
-    user = models.ForeignKey(
-        User,
-        verbose_name='пользователь',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='purchases'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        verbose_name='рецепт',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='customers'
-    )
-
-    def __str__(self):
-        return f'{self.user}-{self.recipe}'
+    def __repr__(self):
+        return f'{self.user} <3 {self.recipe}'

@@ -1,5 +1,4 @@
 from django.contrib.auth.models import AbstractUser
-# from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
@@ -36,10 +35,10 @@ class Favorite(PersonalRecipeList):
         verbose_name_plural = 'Избранные'
 
     def __str__(self):
-        return f'{self.user} <3 {self.recipe}'
+        return f'{self.user} <3'
 
     def __repr__(self):
-        return f'{self.user} <3 {self.recipe}'
+        return f'{self.user} <3'
 
 
 class ShoppingCart(PersonalRecipeList):
@@ -68,10 +67,10 @@ class Subscription(PersonalList):
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return f'{self.user}=>{self.following}'
+        return f'{self.user}=>'
 
     def __repr__(self):
-        return f'{self.user}=>{self.following}'
+        return f'{self.user}=>'
 
 
 class User(AbstractUser):

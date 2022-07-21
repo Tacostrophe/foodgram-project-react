@@ -24,5 +24,6 @@ from django.urls import include, path
 # handler500 = 'core.views.server_error'
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # path('api/', include('users.urls', namespace='users')),
     path('api/', include('api.urls', namespace='api')),
 ]

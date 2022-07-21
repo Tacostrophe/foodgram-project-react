@@ -1,9 +1,5 @@
-from distutils.util import strtobool
 from django_filters import FilterSet, rest_framework
 from recipes import models
-
-
-NUM_BOOL_CHOICES = (('0', 'False'), ('1', 'True'))
 
 
 class RecipeFilters(FilterSet):
@@ -21,16 +17,17 @@ class RecipeFilters(FilterSet):
             if(value == 1):
                 return queryset.filter(favorites__user=user)
             elif(value == 0):
-                return queryset.exclude(favorites__user=user)
+                return queryset.exclude(favorite__user=user)
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         user = self.request.user
+        print(name)
         if user.is_authenticated:
             if(value == 1):
-                return queryset.filter(shopping_cart__user=user)
+                return queryset.filter(shoppingcarts__user=user)
             elif(value == 0):
-                return queryset.exclude(shopping_cart__user=user)
+                return queryset.exclude(shoppingcarts__user=user)
         return queryset
 
     class Meta:

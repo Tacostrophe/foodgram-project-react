@@ -133,3 +133,5 @@ dmypy.json
 
 # media/
 media/
+
+jsons_for_tests/

@@ -198,11 +198,11 @@ class Recipe(models.Model):
         'Описание',
         default='Текстовое описание',
     )
-    ingredients = models.ManyToManyField(
-        'AmountOfIngredient',
-        blank=True,
-        related_name='recipes'
-    )
+    # ingredients = models.ManyToManyField(
+    #     'AmountOfIngredient',
+    #     blank=True,
+    #     related_name='recipes'
+    # )
     tags = models.ManyToManyField(
         Tag,
         verbose_name='Тэги',
@@ -242,7 +242,7 @@ class AmountOfIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='amount_of_ingredients'
+        related_name='ingredients'
     )
     amount = models.PositiveIntegerField(
         'Количество',

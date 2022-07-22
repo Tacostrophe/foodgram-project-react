@@ -1,0 +1,5 @@
+[{"name": "breakfast", "color": "#111111", "slug": "breakfast"},
+{"name": "lunch", "color": "#222222", "slug": "lunch"},
+{"name": "brunch", "color": "#333333", "slug": "brunch"},
+{"name": "tasty", "color": "#444444", "slug": "tasty"},
+{"name": "yummy", "color": "#555555", "slug": "yummy"}]

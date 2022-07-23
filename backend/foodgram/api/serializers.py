@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.db.transaction import atomic
 from djoser.conf import settings
 from djoser.serializers import UserCreateSerializer, UserSerializer
@@ -39,7 +38,7 @@ class CustomUserSerializer(UserSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        return (request and request.user.is_authenticated and
+        return (request.user.is_authenticated and
                 request.user.subscription.following.filter(id=obj.id).exists())
 
     class Meta:
@@ -91,9 +90,12 @@ class SubscriptionSerializer(CustomUserSerializer):
 
 
 class AmountOfIngredientSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='ingredient.name')
+    name = serializers.CharField(
+        source='ingredient.name',
+        read_only=True)
     measurement_unit = serializers.CharField(
-        source='ingredient.measurement_unit'
+        source='ingredient.measurement_unit',
+        read_only=True
     )
 
     class Meta:
@@ -111,14 +113,10 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
         model = models.AmountOfIngredient
         fields = ('id', 'amount')
 
-    def to_representation(self, instance):
-        return AmountOfIngredientSerializer(instance)
-
 
 class RecipePassiveSerializer(RecipePassiveShortSerializer):
     author = CustomUserSerializer(
         read_only=True,
-        default=serializers.CurrentUserDefault()
     )
     ingredients = AmountOfIngredientSerializer(
         many=True,
@@ -132,12 +130,12 @@ class RecipePassiveSerializer(RecipePassiveShortSerializer):
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
-        return (request and request.user.is_authenticated and
+        return (request.user.is_authenticated and
                 request.user.favorite.recipe.filter(id=obj.id).exists())
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
-        return (request and request.user.is_authenticated and
+        return (request.user.is_authenticated and
                 request.user.shoppingcart.recipe.filter(id=obj.id).exists())
 
     class Meta:
@@ -148,13 +146,28 @@ class RecipePassiveSerializer(RecipePassiveShortSerializer):
         )
 
 
-class RecipeActiveSerializer(RecipePassiveSerializer):
-    ingredients = RecipeIngredientCreateSerializer(many=True)
+class RecipeActiveSerializer(serializers.ModelSerializer):
+    author = CustomUserSerializer(
+        read_only=True,
+        default=serializers.CurrentUserDefault()
+    )
+    ingredients = RecipeIngredientCreateSerializer(
+        many=True,
+    )
     tags = serializers.PrimaryKeyRelatedField(
         queryset=models.Tag.objects.all(),
         many=True,
     )
     image = fields.Base64FileField()
+
+    class Meta:
+        model = models.Recipe
+        fields = (
+            'id', 'tags', 'author',
+            'ingredients',
+            'name', 'image',
+            'text', 'cooking_time'
+        )
 
     def validate_cooking_time(self, value):
         if value < 1:
@@ -174,15 +187,7 @@ class RecipeActiveSerializer(RecipePassiveSerializer):
             tags_id_list.append(tag_id)
         return value
 
-    @atomic
-    def create(self, validated_data):
-        request = self.context.get('request')
-        ingredients = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
-        recipe = models.Recipe.objects.create(
-            **validated_data,
-            author=request.user)
-        recipe.tags.set(tags)
+    def create_recipe_ingredients(self, recipe, ingredients):
         try:
             models.AmountOfIngredient.objects.bulk_create(
                 models.AmountOfIngredient(
@@ -199,172 +204,37 @@ class RecipeActiveSerializer(RecipePassiveSerializer):
             else:
                 message = {'ingredients': error_message}
             raise serializers.ValidationError(message)
+
+    @atomic
+    def create(self, validated_data):
+        request = self.context.get('request')
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        recipe = models.Recipe.objects.create(
+            **validated_data,
+            author=request.user)
+        recipe.tags.set(tags)
+        self.create_recipe_ingredients(recipe, ingredients)
         return recipe
 
-    def update(self, instance, validated_date):
-        return super().update()
+    @atomic
+    def update(self, instance, validated_data):
+        print(validated_data)
+        instance.name = validated_data.get('name')
+        instance.text = validated_data.get('text')
+        instance.cooking_time = validated_data.get('cooking_time')
+        new_tags = validated_data.get('tags')
+        instance.tags.set(new_tags)
+        instance.ingredients.all().delete()
+        new_ingredients = validated_data.get('ingredients')
+        self.create_recipe_ingredients(instance, new_ingredients)
+        instance.image.storage.delete(instance.image.name)
+        instance.image = validated_data.get('image')
+        instance.save()
+        return instance
 
-    # def to_representation(self, instance):
-    #     return RecipePassiveSerializer(instance, request=self.context.get('request')).data
-
-    #     print('Were in validate')
-    #     request = self.context.get('request')
-    #     tags_list = request.data.get('tags')
-    #     error_dict = dict()
-    #     # validate tags
-    #     if (not tags_list):
-    #         error_dict['tags'] = 'This field is required'
-    #     elif not isinstance(tags_list, list):
-    #         error_dict['tags'] = (
-    #             'Invalid data. ' +
-    #             f'Expected a list, but got {type(tags_list)}.'
-    #         )
-    #     elif ((models.Tag.objects.filter(id__in=tags_list).
-    #            count()) != len(tags_list)):
-    #         error_dict['tags'] = (
-    #             'Ivalid data. ' +
-    #             'Tags can\'t repeat and should exist'
-    #         )
-    #     else:
-    #         for tag_id in tags_list:
-    #             if not isinstance(tag_id, int):
-    #                 error_dict['tags'] = (
-    #                     'Invalid data. ' +
-    #                     'Expected a list of int,' +
-    #                     f'but list contain {type(tag_id)}.'
-    #                 )
-    #                 break
-    #     ingredients_list = request.data.get('ingredients')
-    #     # validate ingredients
-    #     if (not ingredients_list and request.method == 'POST'):
-    #         error_dict['ingredients'] = 'This field is required'
-    #     elif (not isinstance(ingredients_list, list)):
-    #         error_dict['ingredients'] = (
-    #             'Invalid data. ' +
-    #             f'Expected a list, but got {type(ingredients_list)}.'
-    #         )
-    #     else:
-    #         ingredient_id_list = []
-    #         for ingredient_dict in ingredients_list:
-    #             ingredient_id = ingredient_dict.get('id')
-    #             ingredient_amount = ingredient_dict.get('amount')
-    #             # validate ingredient id
-    #             if (not ingredient_id):
-    #                 ingredient_error = error_dict.get('ingredient')
-    #                 if (not ingredient_error):
-    #                     error_dict['ingredients'] = dict()
-    #                 error_dict['ingredients']['id'] = (
-    #                     'This field is required.'
-    #                 )
-    #                 break
-    #             elif (not isinstance(ingredient_id, int)):
-    #                 ingredient_error = error_dict.get('ingredient')
-    #                 if (not ingredient_error):
-    #                     error_dict['ingredients'] = dict()
-    #                 error_dict['ingredients']['id'] = (
-    #                     'Invalid data. ' +
-    #                     f'Expected a int, but got {type(ingredient_id)}.'
-    #                 )
-    #                 break
-    #             elif (ingredient_id in ingredient_id_list):
-    #                 ingredient_error = error_dict.get('ingredient')
-    #                 if (not ingredient_error):
-    #                     error_dict['ingredients'] = dict()
-    #                 error_dict['ingredients']['id'] = (
-    #                     'Ingredients can\'t repeat'
-    #                 )
-    #                 break
-    #             else:
-    #                 ingredient_id_list.append(ingredient_id)
-    #             # validate ingredient amount
-    #             if (not ingredient_amount):
-    #                 ingredient_error = error_dict.get('ingredient')
-    #                 if (not ingredient_error):
-    #                     error_dict['ingredients'] = dict()
-    #                 error_dict['ingredients']['amount'] = (
-    #                     'This field is required.'
-    #                 )
-    #                 break
-    #             elif (not isinstance(ingredient_amount, int)):
-    #                 ingredient_error = error_dict.get('ingredient')
-    #                 if (not ingredient_error):
-    #                     error_dict['ingredients'] = dict()
-    #                 error_dict['ingredients']['amount'] = (
-    #                     'Invalid data. ' +
-    #                     f'Expected a int, but got {type(ingredient_amount)}.'
-    #                 )
-    #                 break
-    #             elif (ingredient_amount < 1):
-    #                 ingredient_error = error_dict.get('ingredient')
-    #                 if (not ingredient_error):
-    #                     error_dict['ingredients'] = dict()
-    #                 error_dict['ingredients']['amount'] = (
-    #                     'Invalid data. ' +
-    #                     'Should be greater or equal 1.'
-    #                 )
-    #                 break
-    #         if ((models.Ingredient.objects.filter(id__in=ingredient_id_list).
-    #              count()) != len(ingredient_id_list)):
-    #             error_dict['ingredients'] = dict()
-    #             error_dict['ingredients']['id'] = (
-    #                 'Some of ingredients don\'t exist'
-    #             )
-    #     if error_dict:
-    #         raise serializers.ValidationError(error_dict)
-    #     return data
-# 
-    # def add_tags_and_ingredients(self, request, recipe):
-    #     tags_list = request.data.get('tags')
-    #     ingredients_list = request.data.get('ingredients')
-    #     try:
-    #         tags = models.Tag.objects.filter(id__in=tags_list)
-    #         recipe.tags.set(tags)
-    #     except Exception as error:
-    #         if (request.method == 'POST'):
-    #             recipe.delete()
-    #         raise serializers.ValidationError(
-    #             f"Tags caused exception:{error}"
-    #         )
-    #     try:
-    #         for ingredient_dict in ingredients_list:
-    #             amountless_ingredient = get_object_or_404(
-    #                 models.Ingredient,
-    #                 id=ingredient_dict['id']
-    #             )
-    #             models.AmountOfIngredient.objects.create(
-    #                 ingredient=amountless_ingredient,
-    #                 recipe=recipe,
-    #                 amount=ingredient_dict['amount']
-    #             )
-    #         recipe_ingredients = (models.AmountOfIngredient.objects.
-    #                               filter(recipe=recipe))
-    #         recipe.ingredients.set(recipe_ingredients)
-    #     except Exception as error:
-    #         if (request.method == 'POST'):
-    #             recipe.delete()
-    #         raise serializers.ValidationError(
-    #             f"Ingredients caused exception: {error}"
-    #         )
-    #     return recipe
-# 
-    # def create(self, validated_data):
-    #     request = self.context.get('request')
-    #     author = request.user
-    #     recipe = models.Recipe.objects.create(author=author, **validated_data)
-    #     recipe = self.add_tags_and_ingredients(request, recipe)
-    #     return recipe
-# 
-    # def update(self, instance, validated_data):
-    #     instance.name = validated_data.get('name')
-    #     instance.image = validated_data.get('image')
-    #     instance.text = validated_data.get('text')
-    #     instance.cooking_time = validated_data.get('cooking_time')
-    #     request = self.context.get('request')
-    #     old_ingredients = instance.ingredients_amount.all()
-    #     ingredients_id_list = []
-    #     for ingredient in old_ingredients:
-    #         ingredients_id_list.append(ingredient.id)
-    #     instance = self.add_tags_and_ingredients(request, instance)
-    #     models.AmountOfIngredient.objects.filter(id__in=ingredients_id_list).delete()
-    #     instance.save()
-    #     return instance
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        serializer = RecipePassiveSerializer(instance=instance,
+                                             context={'request': request})
+        return serializer.data

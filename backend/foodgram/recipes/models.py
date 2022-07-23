@@ -198,11 +198,6 @@ class Recipe(models.Model):
         'Описание',
         default='Текстовое описание',
     )
-    # ingredients = models.ManyToManyField(
-    #     'AmountOfIngredient',
-    #     blank=True,
-    #     related_name='recipes'
-    # )
     tags = models.ManyToManyField(
         Tag,
         verbose_name='Тэги',
@@ -226,8 +221,14 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
 
+    def delete(self, *args, **kwargs):
+        deleted = self.pk
+        super().save(*args, **kwargs)
+        if deleted:
+            self.image.storage.delete(self.image.name)
+
     def __str__(self):
-        return self.name
+        return f'{self.name} ({self.pk})'
 
     def __repr__(self):
         return self.name

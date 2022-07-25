@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from . import models
+from .forms import TagForm
 
 
 @admin.register(models.User)
@@ -12,6 +13,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(models.Tag)
 class TagAdmin(admin.ModelAdmin):
+    form = TagForm
     list_display = ('pk', 'name', 'color', 'slug')
     empty_value_display = '-пусто-'
 

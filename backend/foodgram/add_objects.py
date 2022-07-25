@@ -2,21 +2,27 @@ import json
 
 from recipes import models
 
-MODELS_DICT = {
-    models.Ingredient: ['name', 'measurement_unit'],
-    models.Tag: ['name', 'color', 'slug'],
-}
+if models.Ingredient.objects.all().exists():
+    print('Ingredients already exists')
+else:
+    with open(f'../../data/ingredients.json') as file:
+        data = json.load(file)
+        models.Ingredient.objects.bulk_create(
+            [models.Ingredient(
+                name=element['name'],
+                measurement_unit=element['measurement_unit']
+            ) for element in data])
+    print('Ingredients added to bd')
 
-for model in MODELS_DICT.keys():
-    if model.objects.all().exists():
-        print(model.__name__ + 's already exists')
-        continue
-    else:
-        with open(f'../../data/{model.__name__.lower()}s.json') as file:
-            data = json.load(file)
-            for element in data:
-                attrs = []
-                for attr in MODELS_DICT[model]:
-                    attrs.append(element[attr])
-                model.objects.create(**attrs)
-        print(model.__name__ + 's added to bd')
+if models.Tag.objects.all().exists():
+    print('Tags already exists')
+else:
+    with open(f'../../data/tags.json') as file:
+        data = json.load(file)
+        models.Tag.objects.bulk_create(
+            [models.Tag(
+                name=element['name'],
+                color=element['color'],
+                slug=element['slug']
+            ) for element in data])
+    print('Tags added to bd')

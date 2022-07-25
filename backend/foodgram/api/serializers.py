@@ -2,8 +2,9 @@ from django.contrib.auth import get_user_model
 from django.db.transaction import atomic
 from djoser.conf import settings
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from recipes import models
 from rest_framework import serializers
+
+from recipes import models
 
 from . import fields
 

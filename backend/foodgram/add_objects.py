@@ -5,7 +5,7 @@ from recipes import models
 if models.Ingredient.objects.all().exists():
     print('Ingredients already exists')
 else:
-    with open(f'../../data/ingredients.json') as file:
+    with open('../../data/ingredients.json') as file:
         data = json.load(file)
         models.Ingredient.objects.bulk_create(
             [models.Ingredient(
@@ -17,7 +17,7 @@ else:
 if models.Tag.objects.all().exists():
     print('Tags already exists')
 else:
-    with open(f'../../data/tags.json') as file:
+    with open('../../data/tags.json') as file:
         data = json.load(file)
         models.Tag.objects.bulk_create(
             [models.Tag(

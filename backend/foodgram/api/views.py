@@ -1,9 +1,4 @@
-from os.path import join
-from pathlib import Path
-
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -13,11 +8,11 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
-from foodgram.settings import MEDIA_ROOT
 from recipes import models
 
 from . import pagination, serializers
 from .filters import RecipeFilters
+from .methods import create_and_download_cart
 from .permissions import OwnerOrReadOnly
 
 User = get_user_model()
@@ -90,36 +85,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        recipes = request.user.shoppingcart.recipe.all()
-        amount_of_ingredients = (models.AmountOfIngredient.objects.
-                                 filter(recipe__in=recipes))
-        recipe_ingredients = (amount_of_ingredients.values('ingredient').
-                              annotate(ingredient_amount=Sum('amount')))
-        shopping_cart = 'Foodgram\n______________\nShopping list:\n'
-        for recipe_ingredient in recipe_ingredients:
-            ingredient = (models.Ingredient.objects.
-                          get(id=recipe_ingredient['ingredient']))
-            shopping_cart += (
-                '   - ' +
-                ingredient.name +
-                ' - ' +
-                str(recipe_ingredient.get('ingredient_amount')) +
-                ' ' +
-                ingredient.measurement_unit +
-                ';\n'
-            )
-        dir_path = join(MEDIA_ROOT, 'shopping_carts', request.user.username)
-        Path(dir_path).mkdir(parents=True, exist_ok=True)
-        path = join(dir_path, 'shopping_cart.txt')
-        file = open(path, 'w')
-        file.write(shopping_cart)
-        file.close()
-        response = FileResponse(
-            open(path, 'rb'),
-            as_attachment=True,
-            filename='shopping_cart.txt'
-        )
-        return response
+        return create_and_download_cart(request)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

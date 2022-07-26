@@ -13,7 +13,7 @@ User = get_user_model()
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ['id', 'name', 'color', 'slug']
+        fields = ('id', 'name', 'color', 'slug')
         model = models.Tag
 
 
@@ -141,10 +141,9 @@ class RecipePassiveSerializer(RecipePassiveShortSerializer):
 
     class Meta:
         model = models.Recipe
-        fields = (
-            'id', 'tags', 'author', 'ingredients', 'name', 'image',
-            'text', 'cooking_time',  'is_favorited', 'is_in_shopping_cart'
-        )
+        fields = ('id', 'tags', 'author', 'ingredients', 'name', 'image',
+                  'text', 'cooking_time',  'is_favorited',
+                  'is_in_shopping_cart')
 
 
 class RecipeActiveSerializer(serializers.ModelSerializer):
@@ -152,9 +151,7 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
         read_only=True,
         default=serializers.CurrentUserDefault()
     )
-    ingredients = RecipeIngredientCreateSerializer(
-        many=True,
-    )
+    ingredients = RecipeIngredientCreateSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=models.Tag.objects.all(),
         many=True,
@@ -163,17 +160,13 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Recipe
-        fields = (
-            'id', 'tags', 'author',
-            'ingredients',
-            'name', 'image',
-            'text', 'cooking_time'
-        )
+        fields = ('id', 'tags', 'author', 'ingredients', 'name', 'image',
+                  'text', 'cooking_time')
 
     def validate_cooking_time(self, value):
         if value < 1:
             raise serializers.ValidationError(
-                'Ensure this value is greater than or equal to 1.'
+                'Убедитесь, что время приготовления больше 1.'
             )
         return value
 
@@ -183,7 +176,7 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
             tag_id = tag.id
             if tag_id in tags_id_list:
                 raise serializers.ValidationError(
-                    'Ensure tags in list are unique'
+                    'Убедитесь, что тэги для рецепта уникальны'
                 )
             tags_id_list.append(tag_id)
         return value
@@ -200,7 +193,8 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
         except Exception as error_message:
             if('UNIQUE constraint failed' in str(error_message)):
                 message = {
-                    'ingredients': 'Ensure ingredients in list are unique'
+                    'ingredients': ('Убедитесь, что ингридиенты для рецепта' +
+                                    'уникальны')
                 }
             else:
                 message = {'ingredients': error_message}
@@ -220,7 +214,6 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
 
     @atomic
     def update(self, instance, validated_data):
-        print(validated_data)
         instance.name = validated_data.get('name')
         instance.text = validated_data.get('text')
         instance.cooking_time = validated_data.get('cooking_time')

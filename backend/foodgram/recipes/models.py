@@ -223,7 +223,7 @@ class Recipe(models.Model):
 
     def delete(self, *args, **kwargs):
         deleted = self.pk
-        super().save(*args, **kwargs)
+        super().delete(*args, **kwargs)
         if deleted:
             self.image.storage.delete(self.image.name)
 

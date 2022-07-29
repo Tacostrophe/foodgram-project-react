@@ -1,5 +1,4 @@
 from django_filters import FilterSet, rest_framework
-
 from recipes import models
 
 

@@ -2,9 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db.transaction import atomic
 from djoser.conf import settings
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework import serializers
-
 from recipes import models
+from rest_framework import serializers
 
 from . import fields
 
@@ -223,7 +222,9 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
         new_ingredients = validated_data.get('ingredients')
         self.create_recipe_ingredients(instance, new_ingredients)
         instance.image.storage.delete(instance.image.name)
-        instance.image = validated_data.get('image')
+        image = validated_data.get('image')
+        if image:
+            instance.image = validated_data.get('image')
         instance.save()
         return instance
 

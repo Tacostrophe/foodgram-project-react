@@ -2,13 +2,12 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import filters, permissions, status, viewsets
+from recipes import models
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
-
-from recipes import models
 
 from . import pagination, serializers
 from .filters import RecipeFilters
@@ -48,10 +47,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilters
 
-    def partial_update(self, request, *args, **kwargs):
-        kwargs['partial'] = False
-        return self.update(request, *args, **kwargs)
-
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
             return serializers.RecipePassiveSerializer
@@ -90,10 +85,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов"""
-    queryset = models.Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('^name',)
+
+    def get_queryset(self):
+        queryset = models.Ingredient.objects.all()
+        name = self.request.query_params.get('name')
+        if name is not None:
+            queryset = queryset.filter(name__startswith=name)
+        return queryset
 
 
 class CustomUserViewSet(UserViewSet):

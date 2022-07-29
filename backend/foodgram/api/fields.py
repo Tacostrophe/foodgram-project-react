@@ -15,4 +15,3 @@ class Base64FileField(serializers.FileField):
             data = ContentFile(base64.b64decode(filestr),
                                name=f'{id.urn[9:]}.{extension}')
         return super().to_internal_value(data)
-        # super(Base64FileField, self).to_internal_value(data)

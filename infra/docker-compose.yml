@@ -8,10 +8,7 @@ services:
       - ./.env
 
   web:
-    build:
-      context: ../backend/foodgram
-      dockerfile: Dockerfile
-    # image: tacostrophe/api_yamdb:latest
+    image: tacostrophe/foodgram_backend:latest
     restart: always
     volumes:
       - static_value:/app/static/
@@ -22,13 +19,9 @@ services:
       - ./.env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: tacostrophe/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
-    # depends_on:
-    #   - web
   nginx:
     image: nginx:1.19.3
     ports:

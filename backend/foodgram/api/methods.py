@@ -4,6 +4,7 @@ from wsgiref.util import FileWrapper
 
 from django.db.models import Sum
 from django.http import HttpResponse
+
 from foodgram.settings import MEDIA_ROOT
 from recipes import models
 
@@ -34,8 +35,5 @@ def create_and_download_cart(request):
     f = open(path, 'w')
     f.write(shopping_cart)
     f.close()
-    response = HttpResponse(
-        FileWrapper(open(path, 'rb')),
-        content_type='application/plain'
-    )
-    return response
+    return HttpResponse(FileWrapper(open(path, 'rb')),
+                        content_type='application/plain')

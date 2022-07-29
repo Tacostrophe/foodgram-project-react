@@ -92,7 +92,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = models.Ingredient.objects.all()
         name = self.request.query_params.get('name')
         if name is not None:
-            queryset = queryset.filter(name__startswith=name)
+            queryset = queryset.filter(name__istartswith=name)
         return queryset
 
 

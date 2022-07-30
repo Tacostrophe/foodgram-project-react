@@ -181,24 +181,24 @@ class RecipeActiveSerializer(serializers.ModelSerializer):
             tags_id_list.append(tag_id)
         return value
 
-    def create_recipe_ingredients(self, recipe, ingredients):
-        try:
-            models.AmountOfIngredient.objects.bulk_create(
-                models.AmountOfIngredient(
-                    ingredient=ingredient['id'],
-                    amount=ingredient['amount'],
-                    recipe=recipe
-                ) for ingredient in ingredients
-            )
-        except Exception as error_message:
-            if('UNIQUE constraint failed' in str(error_message)):
-                message = {
-                    'ingredients': ('Убедитесь, что ингридиенты для рецепта' +
-                                    'уникальны')
-                }
+    def validate(self, data):
+        ingredients_ids = []
+        for ingredient in data['ingredients']:
+            if ingredient['id'] in ingredients_ids:
+                raise serializers.ValidationError(
+                    'Убедитесь, что ингридиенты для рецепта уникальны')
             else:
-                message = {'ingredients': error_message}
-            raise serializers.ValidationError(message)
+                ingredients_ids.append(ingredient['id'])
+        return data
+
+    def create_recipe_ingredients(self, recipe, ingredients):
+        models.AmountOfIngredient.objects.bulk_create(
+            models.AmountOfIngredient(
+                ingredient=ingredient['id'],
+                amount=ingredient['amount'],
+                recipe=recipe
+            ) for ingredient in ingredients
+        )
 
     @atomic
     def create(self, validated_data):
